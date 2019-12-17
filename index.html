@@ -1,0 +1,351 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>From device wiring to Data Studio: a journey with MicroPython and Google serverless</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid="UA-154699423-2"
+                  id="from-device-wiring-to-data-studio"
+                  title="From device wiring to Data Studio: a journey with MicroPython and Google serverless"
+                  environment="web"
+                  feedback-link="https://github.com/nicolaguglielmi/codelab-esp32-iot-cloud/issues">
+    
+      <google-codelab-step label="Introduction" duration="3">
+        <p class="image-container"><img style="width: 624.00px" src="img\92d3ee98277e0511.png"></p>
+<p><strong>Last Updated:</strong> 2019-12-11</p>
+<p>This tutorial extends the awesome one of Carl Krauss on this topic:</p>
+<p><a href="https://medium.com/google-cloud/connecting-micropython-devices-to-google-cloud-iot-core-3680e632681e" target="_blank">https://medium.com/google-cloud/connecting-micropython-devices-to-google-cloud-iot-core-3680e632681e</a></p>
+<h2 is-upgraded><strong>What you&#39;ll build</strong></h2>
+<p>In this codelab, you&#39;re going to wire an ESP32 in order to gather its data. Your project will:</p>
+<ul>
+<li>Gather data from ESP32 board with MicroPython.</li>
+<li>Send data to the Cloud to a Pub/Sub topic.</li>
+<li>Pull data from Pub/Sub topic to BigQuery to do some normalization.</li>
+<li>Use Google Data Studio to analyze the data.</li>
+</ul>
+<p class="image-container"><img style="width: 624.00px" src="img\d6e08c23b4126cbb.png"></p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>How to wire an ESP32 board</li>
+<li>How to flash MicroPython on the board</li>
+<li>How to upload scripts to the board</li>
+<li>How to use MicroPython to run scripts on the board</li>
+<li>How to create and populate a Pub/Sub topic</li>
+<li>How to pull data from the topic</li>
+<li>How to use BigQuery to work on data</li>
+<li>How to use DataStudio to analyze data</li>
+</ul>
+<p>Code blocks are glossed over and are provided for you to simply copy and paste.</p>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>An ESP32 board</li>
+<li>A BME280 sensor (or you can use the board embedded temp sensor)</li>
+<li>Knowledge of Python</li>
+<li>A Google Cloud Account</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Getting set up" duration="2">
+        <h2 is-upgraded><strong>Get the code</strong></h2>
+<p>We&#39;ve put everything you need for this project into a Git repo. To get started, you&#39;ll need to grab the code and open it in your favorite dev environment. For this codelab, we recommend using Git.</p>
+<h3 is-upgraded><strong>Strongly Recommended: Use Git</strong></h3>
+<p>Using Git is the recommended method for working through this codelab.</p>
+<ol type="1" start="1">
+<li>Open a new browser tab and go to <a href="https://git-scm.com/" target="_blank">https://git-scm.com/</a>.</li>
+<li>Download and install Git.</li>
+<li>Open the console<strong>.</strong></li>
+<li>Git clone <strong>https://github.com/nicolaguglielmi/ESP32-to-DataStudio.git</strong>.</li>
+<li>Once the repo has been cloned, edit the <code>config.py</code> file, and update it with your SSID and Wi-Fi password.</li>
+</ol>
+<h3 is-upgraded><strong>Alternative: Download code </strong></h3>
+<p><a href="https://github.com/nicolaguglielmi/ESP32-to-DataStudio/archive/master.zip" target="_blank"><paper-button class="colored" raised><iron-icon icon="cloud_download"></iron-icon>Download source code</paper-button></a></p>
+<ol type="1" start="1">
+<li>Unpack the downloaded zip file.</li>
+<li>Edit the <code>config.py</code> file, and update it with your SSID and Wi-Fi password.</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Flashing MicroPython" duration="6">
+        <h2 is-upgraded><strong>Download MicroPython</strong></h2>
+<p>Download the appropriate MicroPython version for your device from MicroPython website:</p>
+<p><a href="http://micropython.org/download#esp32" target="_blank">http://micropython.org/download</a></p>
+<aside class="special"><p><strong>Tip: </strong>if you have an ESP32, flash with the &#34;esp32-idf3...&#34; firmware series since you can experience errors flashing with &#34;esp32-idf4...&#34; series. Those errors are related to some implementation inside the lib simple.py ussl.wrap in umqtt/simple.py.</p>
+<p>OSError: [Errno 12] ENOMEM</p>
+</aside>
+<h2 is-upgraded><strong>Upload the firmware</strong></h2>
+<p>To upload the firmware you need esptool and you can install it with pip:</p>
+<p><code>pip install esptool</code></p>
+<p>or you can download the Windows binary executable installing the corresponding ESP32 library inside Arduino IDE or from one of these links:</p>
+<p><a href="https://dl.espressif.com/dl/esptool-4dab24e-windows.zip" target="_blank">https://dl.espressif.com/dl/esptool-4dab24e-windows.zip</a></p>
+<p><a href="https://dl.espressif.com/dl/esptool-2.3.1-windows.zip" target="_blank">https://dl.espressif.com/dl/esptool-2.3.1-windows.zip</a></p>
+<p>Esptool is a very powerful tool with a lot of useful functions, so spending some minutes to take a look at it is not a bad idea:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\1fb096ac10397fd3.png"></p>
+<p>You can check if the board is connected and detected correctly issuing some commands (i.e. checking the chip id of your board):</p>
+<p><code>esptool.py -port COM5 chip_id</code></p>
+<p class="image-container"><img style="width: 624.00px" src="img\11e1da16621b85cd.png"></p>
+<p>Follow the instructions for your specific board, <strong>don&#39;t miss the offset value 0x1000</strong> for the ESP32 board:</p>
+<p><code>esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 460800 write_flash -z </code><strong><code>0x1000</code></strong><code> esp32-idf3...</code></p>
+<p>If you are in a Windows environment, please use the correct COM port, reading it from device manager:</p>
+<p><code>esptool.py --chip esp32 --port COM5 --baud 460800 write_flash -z 0x1000 esp32-idf3...</code></p>
+<p>After these steps, you should be able to connect to the board by serial, in Windows you can use &#34;putty&#34; but every serial emulator will do the job.</p>
+<p>Just set the right COM port and speed (115200 should work).</p>
+<p class="image-container"><img style="width: 624.00px" src="img\3405befdf7aa7779.png"></p>
+<p>You will see the Python interactive prompt (REPL,Read Evaluate Print Loop):</p>
+<p class="image-container"><img style="width: 624.00px" src="img\368a7685335370a3.png"></p>
+<p>Try some Python commands and that will be evaluated inside the console:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\4bf41386dd475d04.png"></p>
+<h2 is-upgraded><strong>Other tools</strong></h2>
+<p>One another very useful tool is ampy (<strong>A</strong>dafruit <strong>M</strong>icro<strong>Py</strong>thon Tool) from</p>
+<p><a href="https://github.com/scientifichackers/ampy" target="_blank">https://github.com/scientifichackers/ampy</a></p>
+<p>Ampy let you interact with the board and its filesystem and it is very useful to upload your scripts or reset the board without opening the serial emulator.</p>
+<p>You can easily install it with pip:</p>
+<p><code>pip install adafruit-ampy</code></p>
+<p class="image-container"><img style="width: 624.00px" src="img\1fbc21cbcb800659.png"></p>
+<aside class="special"><p><strong>Tip: </strong>the use of the serial port is exclusive, if you try to upload a script to the board with the console open, it will drive to exception error.</p>
+</aside>
+<p>Now it&#39;s the time to clone the repository:</p>
+<p><code>git clone </code><a href="https://github.com/nicolaguglielmi/ESP32-to-DataStudio" target="_blank"><code>https://github.com/nicolaguglielmi/ESP32-to-DataStudio</code></a></p>
+<p>First you need to generate a pair of pub/priv keys that you will use in a while:</p>
+<p><code>openssl genrsa -out rsa_private.pem 2048</code></p>
+<p><code>openssl rsa -in rsa_private.pem -pubout -out rsa_public.pem</code></p>
+<p>Now you have two other files in the folder, rsa_private.pem and rsa_public.pem</p>
+<p>Due to the memory limits of the ESP32 you need a small workaround to get the board able to create the JWT.</p>
+<p>You have to decode the private key to its components using the cpu of your machine: to do so, you can use the decode_rsa.py routine</p>
+<p><code>pip install rsa</code></p>
+<p><code>python utils/decode_rsa.py &gt;&gt;config.py</code></p>
+<p>With the previous command you append the result of decode_rsa.py to the config.py; now edit the file to restore the right JSON format, note that the keys are passed as integer, not as strings:</p>
+<h3 is-upgraded><a href="https://github.com/nicolaguglielmi/ESP32-to-DataStudio/blob/master/config.py" target="_blank">config.py</a></h3>
+<pre><code>Jwt_config = {
+        ‘algorithm&#39;:&#39;RS256&#39;,
+        ‘Token_ttl&#39;: 43200, #12 hours
+        # Use utils/decode_rsa.py to decode private pem to pkcs1.
+        ‘private_key&#39;:(&lt;PRIVATE_KEY&gt;)
+}</code></pre>
+<p>You will be back on config.py after doing some tests.</p>
+<p>You can try to write a simple script:</p>
+<h3 is-upgraded><a href="https://github.com/nicolaguglielmi/ESP32-to-DataStudio/blob/master/easy_counter.py" target="_blank">easy_counter.py</a></h3>
+<pre><code>#Just an easy sample to test the time lib
+Import time
+print(&#34;I can count the seconds:&#34;)
+i = 1
+
+while True:
+        print(i, &#34;seconds passed from the start...&#34;)
+        i += 1
+        time.sleep(1.0) # 1 second delay</code></pre>
+<p>And to upload it to the board:</p>
+<p><code>ampy -p COM5 put easy_counter.py</code></p>
+<p>To start a script from the REPL you just have to import it:</p>
+<p><code>import easy_counter</code></p>
+<p class="image-container"><img style="width: 624.00px" src="img\36e0e9444b026d4.png"></p>
+<p>Just press <em>CTRL+C</em> to break the loop.</p>
+<aside class="special"><p><strong>Tip: </strong>You can use ampy also to start a script that is in the filesystem of the board, with:</p>
+<p><code>ampy -p COM5 run easy_counter.py</code></p>
+<p>In this case you will not see anything because this script print out to the console, but running script with ampy is very useful to avoid opening and closing console between each file upload.</p>
+</aside>
+<h2 is-upgraded><strong>Script autoloading</strong></h2>
+<p>If you want to execute your script when the board boots, you have to name it main.py and put it on the root tree of the board filesystem.</p>
+<p>The files that will be executed each boot of the board are boot.py and main.py.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Wiring" duration="3">
+        <p>Now some wiring is needed to connect the board and the sensor.</p>
+<p class="image-container"><img style="width: 227.21px" src="img\90c0eca3d20cdffb.png"></p>
+<p>Here you see BME280, a sensor made from Bosch, that can sense temperature, humidity and pressure in a single board. It uses the I2C communication bus.</p>
+<p>If you don&#39;t have the BME280 sensor, you can use whatever hardware you have and/or prefer or try with the board embedded temperature monitor just to have some data to stream to the cloud.</p>
+<p>Start wiring the BME280, look for the pin on your board that are marked as [Wire SDL] [Wire SDA] and connect that pins to the corresponding ones on the BME280 sensor.</p>
+<p>In this case the pins are the IO22 and IO21, you can find yours from the reference pinout of your board. You also need 3.3V and GND for the BME280, you can use these pins:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\33888246ad14d508.png"></p>
+<p>If all the connections are ok, the hardware part is done and you can focus on the software.</p>
+<h2 is-upgraded><strong>Test the sensors</strong></h2>
+<p>Let&#39;s test the sensor loading the library folder to the board with ampy:</p>
+<p><code>ampy -p COM5 put third_party</code></p>
+<p>It will take a while to load.</p>
+<p>Make a quick test with the POW script bmtest.py:</p>
+<h3 is-upgraded><a href="https://github.com/nicolaguglielmi/ESP32-to-DataStudio/blob/master/bmetest.py" target="_blank">bmetest.py</a></h3>
+<pre><code># A quick POW to check that the board get the values from the sensors
+import machine
+#from machine import Pin, ADC, I2C, RTC
+import lib.BME280
+Import time
+
+# ESP32 - Pin assignment
+I2c = machine.I2C(scl=machinePin(22), sda=machine.Pin(21), freq=10000)
+
+while True:
+    bme = BME280.BME280(i2c=i2c)
+    temp = bme.temperature
+    humi = bme.humidity
+    pres = bme.pressure
+    print(&#34;_____________________&#34;)
+    print(&#34;Temperature :&#34;,temp)
+    print(&#34;Humidity    :&#34;,humi)
+    print(&#34;Pressure    :&#34;,pres)
+    print(&#34;_____________________&#34;)
+    time.sleep(10)
+</code></pre>
+<p>Upload to the board:</p>
+<p><code>ampy -p COM5 put bmetest.py</code></p>
+<p>Connect with serial emulator and start the script importing it.</p>
+<p>If everything is ok, you should see some data on the console!</p>
+<p class="image-container"><img style="width: 624.00px" src="img\7031bc55b26c4757.png"></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Configure IoT Pub/Sub" duration="6">
+        <h2 is-upgraded><strong>Brief architecture description</strong></h2>
+<p>There are several ways to design and deploy a data management pipeline using the cloud services.</p>
+<p>In this tutorial we will focus on a full serverless approach.</p>
+<p>On opposite you can run a vm or docker with tools like RabbitMQ.</p>
+<p>In a serverless approach, you can choose among many options, too, as you can see in the chart:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\92d3ee98277e0511.png"></p>
+<p>Our entrypoint is<strong> IoT Core</strong>, after that we will accumulate the sensors readings in Pub/Sub and we will process with a Google Cloud Functions (GCF).</p>
+<p>With <strong>Cloud Dataflow </strong>you can design and execute the transformations your data needs to be loaded inside BigQuery in a managed environment.</p>
+<p>The approach is super easy and effective, but for low data volume there is a drawback.</p>
+<p>Each Dataflow job is executed on a Compute Engine Instance and you can start it as a batch job, to process the data in bulk or as a stream job to process data continuously.</p>
+<p>Due the nature of Pub/Sub system, it requires a stream processing and this blocks the termination of the Dataflow instance, keeping it running indefinitely and generating costs.</p>
+<p>On opposite, <strong>Cloud Functions</strong> are executed on event, like new Pub/Sub message, and you can leave the function working because the cost of each invocation is microscopic.</p>
+<h2 is-upgraded><strong>Google Cloud Platform</strong></h2>
+<p>Point your browser to <a href="https://console.cloud.google.com/" target="_blank">https://console.cloud.google.com/</a> and if you don&#39;t have one, you can create a free account with 300$ of credit for one year.</p>
+<p>Create a project or select one and select IoT Core functions menu:</p>
+<p class="image-container"><img style="width: 243.33px" src="img\36657cbe90d1c177.png"></p>
+<p>You can find IoT Core under BigData section.</p>
+<p>Now create a registry, choose a registry ID to identify the IoT Core endpoint. You can have multiple devices send data to this registry.</p>
+<p>Choose a region, closer to the device that will stream the data and enable the protocol, for this tutorial you need just MQTT, but you can left both enabled (MQTT/HTTP).</p>
+<p><code>[Default telemetry topic]</code></p>
+<p>Now it&#39;s the time to create a pub/sub topic to collect the data that are coming from the device, select create topic from drill down menu and type in a name for this Sub/Sub topic.</p>
+<p>You can leave the key management to Google.</p>
+<p><code>[Device state topic]</code></p>
+<p>In a more complex setup you may wish to redirect changes in status events to a separate Pub/Sub topic and you will use the Device state topic.</p>
+<p>Select the error level you wish, &#34;info&#34; is enough, you can change later.</p>
+<p>Keep in mind that these logs use Stackdriver services and would billed.</p>
+<p>Click on create and you will create registry and Pub/Sub topic.</p>
+<p>Now select the registry you created and click on &#34;Devices&#34; to configure the access for your device:</p>
+<p class="image-container"><img style="width: 358.17px" src="img\e0d3c693b92e3b6.png"></p>
+<p>Choose a device id to identify your device&#39;s data, set it up to allow communications, set authentication to &#34;manual&#34; with the key format RS256 and paste the content of the rsa_private.pem file you created before.</p>
+<p class="image-container"><img style="width: 624.00px" src="img\f19f8c706c9adc31.png"></p>
+<h2 is-upgraded><strong>Let&#39;s stream some data to the cloud</strong></h2>
+<p>You should have all the files of the repository you previously cloned inside a folder.</p>
+<p>Edit the config.py wifi_config settings to match the values you set during creation of registry and device id and the values of your sda/scl pinout.</p>
+<p>Once the config.py file is ready you can upload all the files to the board.</p>
+<p><code>ampy -p COM5 put config.py</code></p>
+<p><code>ampy -p COM5 put iot-test.py main.py</code></p>
+<p>With the second command you will upload the file iot-test.py and rename it as main.py to allow auto execution on each restart.</p>
+<aside class="special"><p>Tip: If you don&#39;t use the BME280 sensor and wish to use the integrated temperature reader, please upload the iot-test-only-temp.py instead of iot-test.py</p>
+</aside>
+<p>If everything is ok, you should see some data flowing in Pub/Sub.</p>
+<p>To do a quick check, use the Stackdriver logs:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\217d17b944c1a5a4.png"></p>
+<p>You should see some data:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\821576aeb1f53dad.png"></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Configure BigQuery" duration="6">
+        <p>Now it&#39;s the time to process the incoming data.</p>
+<p>The data should flow from IoT Core to Pub/Sub and accumulates until some subscription pulls it.</p>
+<p>We will build a Google Cloud Function that will be called each time new data flows to pub/sub and do a simple data preparation before pushing it to BigQuery.</p>
+<h2 is-upgraded><strong>Create dataset</strong></h2>
+<p>First of all, let&#39;s create a dataset and table in BigQuery to receive the incoming data: go to BigQuery from the Google Cloud Console.</p>
+<p>You can use the name you prefer for dataset and table, just respect the constraints of naming: <strong>write it down for use in the GCF</strong>.</p>
+<p>Under &#34;Resource&#34;, click on your Project Name and select &#34;Create Dataset&#34;:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\44ca6586ff7a762c.png"></p>
+<p>Type in the name IoT_test and select the region nearest to you (or to the streaming device):</p>
+<p class="image-container"><img style="width: 624.00px" src="img\fa1986c6f3a4cba9.png"></p>
+<p>It&#39;s the time to create a table for the data!</p>
+<p>Click on the newly created dataset, select &#34;Create table&#34; and define the fields you need on the table:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\3f37112130732d72.png"></p>
+<p>Now you are able to collect the data you are streaming.</p>
+<h2 is-upgraded><strong>Google Cloud Functions setup</strong></h2>
+<p>Last step of ingress to DB process is to write and deploy a GCF that take data from your device as soon as they are published to Pub/Sub, make a small makeup of data and send it to Big Query.</p>
+<p>Go back to Google Cloud Console and open Cloud Functions from the left menu.</p>
+<p>Click on the Create Function and input some infos, like function&#39;s name, memory etc...</p>
+<p>You can have different memory size for your functions and you can choose different languages.</p>
+<p>For this tutorial we use Python and 128MB should be enough.</p>
+<p>The GCF will be executed each time one event will trigger it, and we have several event triggers to choose from.</p>
+<p>Under trigger, select Pub/Sub and select your topic.</p>
+<p class="image-container"><img style="width: 624.00px" src="img\18da6f7775156198.png"></p>
+<p>Copy the code from the file gcfunctions.py and paste it in the textarea.</p>
+<p>You can have many functions inside a single GCF and you have to specify which one should be executed on the trigger event: type the name of that function in &#34;Function to execute&#34;:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\7cefcd8fb0a7adf3.png"></p>
+<p>If you need specific libs for your function, you can load them in the requirements.txt tab.</p>
+<p>We need two additional libs for our project:</p>
+<p><code>google.cloud</code></p>
+<p><code>Google-cloud-bigquery</code></p>
+<p class="image-container"><img style="width: 624.00px" src="img\b537a0d3b2493807.png"></p>
+<p>Clicking on &#34;Environment variables, networking, timeouts and more&#34; you can access additional options, like the Region in which you want to deploy your function, some limit like time execution limit and maximum limit for concurrent functions you want to execute.</p>
+<p>Under environment you will define two variables to define your dataset and your table:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\3ee446b952dcfdaf.png"></p>
+<p>Click on &#34;Deploy&#34;, give it some seconds and go to check logs: open your function and click on &#34;view logs&#34;.</p>
+<p class="image-container"><img style="width: 624.00px" src="img\9a1530b87fb94632.png"></p>
+<p>You should see something like this:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\25a7f766ba9eb52c.png"></p>
+<p>If you see a terminating status &#34;ok&#34;, the data has probably been processed correctly and you can check if in BigQuery everything is going well.</p>
+<p>Open BigQuery in another tab, click on your dataset, table and click on &#34;Preview&#34;:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\94a15a7dacac4c17.png"></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Analytics with Google Data Studio" duration="4">
+        <p>Open Data Studio and to create a datasource, browsing to:</p>
+<p><a href="https://datastudio.google.com/" target="_blank">https://datastudio.google.com/</a></p>
+<p>First create a new datasource pointing to your BigQuery data:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\706c470e3c1a9cbe.png"></p>
+<p>Select BigQuery, set a name for this datasource and select the project, dataset and table:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\1185fa88309bb673.png"></p>
+<p>Connect and make a little modification to the timestamp visualization field to also get hours and minutes:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\db6b225945e749.png"></p>
+<p>Finally , click on &#34;Create Report&#34;.</p>
+<p>Just add a time-series chart to your dashboard, stretch it to max size and make some markup, add your metric selecting Average as aggregation:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\b56da0abacd8fff8.png"></p>
+<p>Make some improvements, moving the Pressure series to a right axis scale and make some little tweaks, experiment with the options (don&#39;t be shy, you can&#39;t break anything! ;))</p>
+<p class="image-container"><img style="width: 624.00px" src="img\232b51724fb68be0.png"></p>
+<p>And finally, play with <strong>styles </strong>to give a better look and feel to your dashboard and add widgets and labels:</p>
+<p class="image-container"><img style="width: 624.00px" src="img\d6e08c23b4126cbb.png"></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Congratulations" duration="0">
+        <p>Congratulations, you&#39;ve successfully built your first sensor gathering system in the Cloud! </p>
+<p>You wired the circuit, flashed MicroPython on a board and setup BigQuery and Data Studio to refine and visualize the data.</p>
+<p>You now know the key steps required to gather data from an ESP32 board to make some analysis.</p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+
+</body>
+</html>

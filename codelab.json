@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2019-12-17T10:25:16Z",
+  "id": "from-device-wiring-to-data-studio",
+  "duration": 30,
+  "title": "From device wiring to Data Studio: a journey with MicroPython and Google serverless",
+  "authors": "Nicola Guglielmi",
+  "summary": "In this codelab, you will wire a sensor to an ESP32 board to gather its data and send it to the Cloud. You will use BigQuery to prepare sensor data and Data Studio to make some analysis.",
+  "source": "1VfFOp--fxHyZ1dpOTq-aM4l11lV-3AuIaOczQJwRblw",
+  "theme": "cloud",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "Cloud",
+    "IoT"
+  ],
+  "tags": [
+    "gdgcampobasso-2019"
+  ],
+  "feedback": "https://github.com/nicolaguglielmi/codelab-esp32-iot-cloud/issues",
+  "ga": "UA-154699423-2",
+  "url": "from-device-wiring-to-data-studio"
+}
